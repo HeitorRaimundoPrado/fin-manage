@@ -27,3 +27,7 @@ class DevelopmentConfig(Config):
 class ProductionConfig(Config):
     # Production-specific configuration options
     pass
+
+class TestingConfig(Config):
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///testing.db'
+    pass

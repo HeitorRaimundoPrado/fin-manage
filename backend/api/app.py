@@ -1,4 +1,9 @@
-from __init__ import create_app
+import sys 
+from os.path import dirname, abspath
+
+sys.path.insert(0, dirname(dirname(abspath(__file__))))
+
+from api import create_app
 from argparse import ArgumentParser
 
 def parse_args():

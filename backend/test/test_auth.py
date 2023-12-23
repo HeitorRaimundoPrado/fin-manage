@@ -1,9 +1,9 @@
-from app import create_app
+from api import create_app
 import pytest
 
 @pytest.fixture()
 def app():
-    app = create_app()
+    app = create_app(config_name='testing')
     return app
 
 @pytest.fixture()
@@ -28,6 +28,7 @@ def test_register(client):
 
     assert response.status_code == 200
 
+
 def test_confirm_email(client, mocker):
     emails = []
     
@@ -37,9 +38,9 @@ def test_confirm_email(client, mocker):
     mocker.patch('flask_mail.Mail.send', mock_send)
     
     response = client.post('/register', json={
-        'username': 'username123',
+        'username': 'username1234',
         'password': 'pass',
-        'email': 'email@email.com'
+        'email': 'johndoe@email.com'
     })
 
 

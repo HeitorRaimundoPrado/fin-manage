@@ -1,10 +1,10 @@
-from flask import Blueprint, current_app, request, g
+from flask import Blueprint, current_app, request
 from sqlalchemy.exc import IntegrityError
-from flask_jwt_extended import create_access_token, verify_jwt_in_request
+from flask_jwt_extended import create_access_token, jwt_required, decode_token
 from flask_mail import Message
 from werkzeug.security import generate_password_hash, check_password_hash
-from app import db
-from app import mail
+from api.extensions import db
+from api.extensions import mail
     
 
 auth_bp = Blueprint('auth', __name__)
@@ -16,7 +16,7 @@ def register():
     username = req.get('username', None)
     password = req.get('password',  None)
 
-    from app.models import User
+    from api import User
     
     user = User.query.filter_by(username=username).first()
 
@@ -25,12 +25,14 @@ def register():
 
     try:
         user = User(username=username, email=email, password=generate_password_hash(password))
+        db.session.add(user)
+        db.session.commit()
 
     except IntegrityError:
         return {'msg': 'email already used'}, 401
 
     if not user:
-        return {'msg': 'erro creating user'}, 500
+        return {'msg': 'error creating user'}, 500
     
     token = create_access_token(identity=user.email)
     
@@ -44,20 +46,22 @@ def register():
 @auth_bp.route('/confirm_email/<token>', methods=['POST'])
 def confirm_email(token):
     try:
-        print(token)
-        return {},200
-        from models import User
+        email = decode_token(token)['sub']
+        print(email)
+
+        from api import User
 
         user = User.query.filter_by(email=email).first()
         if user is None:
             return {'msg': 'invalid token'}, 400
         
-        user.is_confirmed = 1
+        user.is_confirmed = True
         
-        from __init__ import db
+        from api.extensions import db
         db.session.commit()
         
-    except:
+    except Exception as e:
+        print(e)
         return {'msg': 'the confirmation link is invalid or has expired'}, 400
     else:
         return {'msg': 'confirmed email', 'redirect_url': '/'}, 200

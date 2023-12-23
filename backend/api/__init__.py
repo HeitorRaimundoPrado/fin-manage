@@ -1,24 +1,18 @@
 import sys
 from pathlib import Path
-from flask_sqlalchemy import SQLAlchemy
+from os.path import dirname, abspath
 
-path = Path(__file__)
+sys.path.insert(0, dirname(dirname(abspath(__file__))))
 
-print(path.parent.absolute())
-
-sys.path.insert(0, path.parent.absolute().__str__())
-
-from flask import Flask, g
+from flask import Flask
 from flask_cors import CORS
-from config import DevelopmentConfig, ProductionConfig
+from api.config import DevelopmentConfig, ProductionConfig, TestingConfig
 from flask_jwt_extended import JWTManager
-from flask_mail import Mail
 
-db = SQLAlchemy()
-mail = Mail()
+from api.extensions import db, mail, migrate
+from api.models import User
 
 def create_app(config_name='development'):
-    print('hello world')
     app = Flask(__name__)
     
     # Load configuration
@@ -27,26 +21,28 @@ def create_app(config_name='development'):
 
     elif config_name == 'production':
         app.config.from_object(ProductionConfig)
-                               
-    mail = Mail(app)
 
+    elif config_name == 'testing':
+        app.config.from_object(TestingConfig)
+                               
     # Enable CORS for all routes
     CORS(app)
     db.init_app(app)
     mail.init_app(app)
+    migrate.init_app(app, db)
     
     jwt = JWTManager(app)
 
 
-    from routes import auth_bp, finance_bp
+    from api.routes import auth_bp, finance_bp
     
     blueprints = [auth_bp, finance_bp]
 
-    for blueprint in blueprints:
-        app.register_blueprint(blueprint)
 
     with app.app_context():
         db.create_all()
 
-
+    for blueprint in blueprints:
+        app.register_blueprint(blueprint)
+    
     return app
