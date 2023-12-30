@@ -66,7 +66,22 @@ def confirm_email(token):
     else:
         return {'msg': 'confirmed email', 'redirect_url': '/'}, 200
 
+
 @auth_bp.route('/login', methods=["POST"])
 def login():
+    req = request.get_json()
+    username = req.get("username", None)
+    password = req.get("password", None)
+
+    from api import User
+
+    user = User.query.filter_by(username=username).first()
+
+    if user is None or user.is_confirmed is False or check_password_hash(password, user.password) is False:
+        return {'msg': 'no user found'}, 401
+
+    token = create_access_token(identity=user.id)
+
     
-    return {'msg': 'successful login'},200
+    return {'msg': 'successful login', 'token': token}, 200
+
